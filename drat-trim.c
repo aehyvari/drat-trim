@@ -61,7 +61,7 @@ struct solver {
         *processed, *assigned, count, *used, *max, COREcount, RATmode, RATcount, nActive, *lratTable,
         nLemmas, maxRAT, *RATset, *preRAT, maxDependencies, nDependencies, bar, backforce, reduce,
         *dependencies, maxVar, maxSize, mode, verb, unitSize, unitStackSize, prep, *current, nRemoved, warning,
-        delProof, *setMap, *setTruth;
+        delProof;
     char *coreStr, *lemmaStr;
     struct timeval start_time;
     long mem_used, time, nClauses, nStep, nOpt, nAlloc, *unitStack, *reason, lemmas, nResolve,
@@ -1737,8 +1737,6 @@ end_delete:;
     S->used       = (int  *) malloc ((2 * n + 1) * sizeof (int )); S->used     += n; // Labels for variables, non-zero means false
     S->max        = (int  *) malloc ((2 * n + 1) * sizeof (int )); S->max      += n; // Labels for variables, non-zero means false
     S->falseA     = (int  *) malloc ((2 * n + 1) * sizeof (int )); S->falseA   += n; // Labels for variables, non-zero means false
-    S->setMap     = (int  *) malloc ((2 * n + 1) * sizeof (int )); S->setMap   += n; // Labels for variables, non-zero means false
-    S->setTruth   = (int  *) malloc ((2 * n + 1) * sizeof (int )); S->setTruth += n; // Labels for variables, non-zero means false
 
     S->optproof   = (long *) malloc (sizeof(long) * (2 * S->nLemmas + S->nClauses));
 
@@ -1764,8 +1762,6 @@ end_delete:;
 
     for (int i = 1; i <= n; ++i) {
         S->max     [ i] = S->max     [-i] = INIT;
-        S->setMap  [ i] = S->setMap  [-i] =    0;
-        S->setTruth[ i] = S->setTruth[-i] =    0;
         S->wlist   [ i] = (long*) malloc (sizeof (long) * S->max[ i]);
         S->wlist   [-i] = (long*) malloc (sizeof (long) * S->max[-i]);
     }
