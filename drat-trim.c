@@ -241,7 +241,7 @@ void noAnalyze (struct solver* S) {
     S->processed = S->assigned = S->forced;
 }
 
-int propagate (struct solver* S, int init, int mark) { // Performs unit propagation (init not used?)
+int propagate (struct solver* S, int mark) { // Performs unit propagation
     int *start[2];
     int check = 0;
     int mode = !S->prep;
@@ -309,7 +309,7 @@ next_clause: // Set position for next clause
 
 
 // Propagate top level units
-static inline int propagateUnits (struct solver* S, int init) {
+static inline int propagateUnits (struct solver* S) {
     int i;
 //  printf("c propagateUnits %i\n", S->unitSize);
     while (S->forced > S->falseStack) {
@@ -323,7 +323,7 @@ static inline int propagateUnits (struct solver* S, int init) {
         assign (S, lit);
     }
 
-    if (propagate (S, init, 1) == UNSAT) {
+    if (propagate (S, 1) == UNSAT) {
         return UNSAT;
     }
     S->forced = S->processed;
@@ -806,7 +806,7 @@ int checkRAT (struct solver *S, int pivot, int mark) {
                     S->reason[abs (lit)] = 0;
                 }
             }
-            if (propagate (S, 0, mark) == SAT) {
+            if (propagate (S, mark) == SAT) {
                 flag = 0;
                 break;
             }
@@ -868,7 +868,7 @@ int redundancyCheck (struct solver *S, int *clause, int size, int mark) {
     }
 
     S->current = clause;
-    if (propagate (S, 0, mark) == UNSAT) {
+    if (propagate (S, mark) == UNSAT) {
         indegree = S->nResolve - indegree;
         if (indegree <= 2 && S->prep == 0) {
             S->prep = 1; if (S->verb) printf ("\rc [%li] preprocessing checking mode on\n", S->time);
@@ -1008,7 +1008,7 @@ int init (struct solver *S) {
 
     S->nDependencies = 0;
     S->time = S->count; // Alternative time init
-    if (propagateUnits (S, 1) == UNSAT) {
+    if (propagateUnits (S) == UNSAT) {
         printf ("\rc UNSAT via unit propagation on the input instance\n");
         printDependencies (S, NULL, 0);
         postprocess (S);
@@ -1050,7 +1050,7 @@ int verify (struct solver *S, int begin, int end) {
             if (d) {
                 if (S->mode == FORWARD_SAT) {
                     removeUnit (S, lit);
-                    propagateUnits (S, 0);
+                    propagateUnits (S);
                 } else { // no need to remove units while checking UNSAT
                     if (S->verb) {
                         printf("c removing proof step: d "); printClause(lemmas);
@@ -1089,7 +1089,7 @@ int verify (struct solver *S, int begin, int end) {
                 } else {
                     // if (S->mode == FORWARD_SAT) // also for FORWARD_UNSAT?
                     removeWatch (S, lemmas, 0), removeWatch (S, lemmas, 1);
-                    propagateUnits (S, 0);
+                    propagateUnits (S);
                 }
             } else {
                 removeWatch (S, lemmas, 0), removeWatch (S, lemmas, 1);
@@ -1104,7 +1104,7 @@ int verify (struct solver *S, int begin, int end) {
 
         if (d && S->mode == FORWARD_SAT) {
             if (size == -1)
-                propagateUnits (S, 0);  // necessary?
+                propagateUnits (S);  // necessary?
             if (redundancyCheck (S, lemmas, size, 1) == FAILED) {
                 printf ("c failed at proof line %i (modulo deletion errors)\n", step + 1);
                 return SAT;
@@ -1136,7 +1136,7 @@ int verify (struct solver *S, int begin, int end) {
             if (S->verb) printf ("\rc found unit %i\n", lemmas[0]);
             assign (S, lemmas[0]);
             S->reason[abs (lemmas[0])] = ((long) ((lemmas)-S->DB)) + 1;
-            if (propagate (S, 1, 1) == UNSAT)
+            if (propagate (S, 1) == UNSAT)
                 goto start_verification;
             S->forced = S->processed;
         }
@@ -1927,13 +1927,13 @@ int main (int argc, char** argv) {
         } else {
             tmp++;
             if (tmp == 1) {
-                S.inputFile = fopen (argv[1], "r");
+                S.inputFile = fopen (argv[i], "r");
                 if (S.inputFile == NULL) {
                     printf ("\rc error opening \"%s\".\n", argv[i]);
                     return ERROR;
                 }
             } else if (tmp == 2) {
-                S.proofFile = fopen (argv[2], "r");
+                S.proofFile = fopen (argv[i], "r");
                 if (S.proofFile == NULL) {
                     printf ("\rc error opening \"%s\".\n", argv[i]);
                     return ERROR;
@@ -1977,7 +1977,7 @@ int main (int argc, char** argv) {
                     }
                 }
                 fclose (S.proofFile);
-                S.proofFile = fopen (argv[2], "r");
+                S.proofFile = fopen (argv[i], "r");
                 if (S.proofFile == NULL) {
                     printf ("\rc error opening \"%s\".\n", argv[i]); return ERROR;
                 }
